@@ -6,8 +6,31 @@ import Cafe
 pb = Cafe.ProblemeCafe()
 print(pb.etats())
 print(pb.actions())
-
-
+robot,voiture = pb.depart()
+etatSuivant = pb.etatSuivant([robot,voiture],"droite")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"droite")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"droite")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"prendre")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"gauche")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"gauche")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"gauche")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"poser")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"rien")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"rien")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"rien")
+print(etatSuivant)
+etatSuivant = pb.etatSuivant(etatSuivant,"rien")
+print(etatSuivant)
 # On appel l'état de départ de café
 def agirFixe():
     print(pb.depart())
@@ -46,6 +69,6 @@ def agirNb(nbIterations):
         # On donne la valeur d'arrivée à la valeur de départ
         stateD = stateA
 
-agirNb(500)
+# agirNb(500)
 
 # Voir pour faire un agir au hasard infini
