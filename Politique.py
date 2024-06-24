@@ -161,3 +161,6 @@ politique_optimale = sansPasDeTempsQValuesPolitique(10)
 
 # Exécuter la politique optimale et calculer le gain maximum
 gain_max = executerPolitiqueOptimale(13, politique_optimale)
+
+gain_max = sansPasDeTempsQValues(10)
+print ("Gain max: ", gain_max)
