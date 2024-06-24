@@ -1,221 +1,163 @@
+# Import des classes random pour le RNG, et café
 import random
-
 import Cafe
-
+# Taille maximale de la grille, non utilisée
 TAILLE = 4
 # test importation
 pb = Cafe.ProblemeCafe()
 
-
-# print(pb.etats())
-# print(pb.actions())
-
-
-# A ^ S politiques différentes
-
+# Fonction permettant de créer une politique aléatoire
+# Return la politique aléatoire créée
 def creerPolitique():
-    states = pb.etats()
+    states = pb.etats()[0]
     actions = pb.actions()
-    # Créer un dictionnaire
+    #Créer un dictionnaire contenant la politique avec le choix de l'action
     politique = {}
-
     for state in states:
         rng = random.choice(actions)
         politique[state] = rng
-
     return politique
 
-
+#Création de la politique
 politique = creerPolitique()
 
-
-# print("Politique: " + str(politique))
-
-
+# Fonction utilisée pour executer la politique, uniquement pour la politique aléatoire, qui n'est pas faite de la même façon que la politique finale
+# Return nothing, simplement des print de les actions
 def executerPolitique(nbIterations, politique):
-    # On initialise l'état de départ
     stateD = pb.depart()
-    # On intialise les récompenses
     recompense = 0
-    # On récupère la politique
     pol = politique
-    # Pour nbIteration
     for i in range(nbIterations):
-        # On récupère l'action dans le dictionnaire
-        action = pol.get(stateD)
-        # On execute, et on obtiens l'état d'arrivé
+        action = pol.get(stateD[0])
         stateA = pb.etatSuivant(stateD, action)
-        # On obtiens la récompense
         recompense += pb.recompense(stateD, action, stateA)
+        if pb.recompense(stateD, action, stateA) == -10:
+            stateA = pb.death(stateA[1])
         print("Action: " + str(action))
         print("Etat actuel: " + str(stateD))
         print("Etat suivant: " + str(stateA))
         print("Recompense: " + str(recompense))
-        # On donne la valeur d'arrivée à la valeur de départ
         stateD = stateA
 
-
+#Méthode à utiliser pour tester la politique créée
 # executerPolitique(10, politique)
 
+# Fonction utilisée pour retourner les etats possibles du monde
+# Return les etats possibles du monde dans un dictionnaire
+def return_etats_monde():
+    etat_monde = {}
+    for etat in pb.etats()[0]:
+        for etat_voiture in pb.etats()[1]:
+            etat_monde[(etat, etat_voiture)] = 0  # Initialiser chaque combinaison à 0
+    return etat_monde
 
-def creerPolitique(taille, states):
-    politique = {}
-    for state in states:
-        (pos, cafe) = state
-        if pos == 0:
-            if cafe == False:
-                politique[state] = 'prendre'
-            else:
-                politique[state] = 'droite'
-        elif pos == taille - 1:
-            if cafe == True:
-                politique[state] = 'poser'
-            else:
-                politique[state] = 'gauche'
-        else:
-            if cafe:
-                politique[state] = 'droite'
-            else:
-                politique[state] = 'gauche'
-    return politique
-
-
-pol = creerPolitique(4, pb.etats())
-
-
-# print("Politique: " + str(pol))
-
-# executerPolitique(1000, pol )
-
-# La Q valeur est le gain que l'on pourrait avoir dans le futur, en effectuant une action
-# Pi1 (s) =argmax<Q(s,d)
-def unPasDeTemps(s, a):
-    reward = {}
-    (pos, cafe) = s
-    if a == "droite" or a == "gauche":
-        reward[s] = 0
-    elif a == "rien":
-        reward[s] = 0
-    elif a == "prendre" and pos == 0 and cafe == False:
-        reward[s] = -1
-    elif a == "prendre" and pos == 0 and cafe == True:
-        reward[s] = 0
-    elif a == "poser" and pos == TAILLE - 1 and cafe == True:
-        reward[s] = 10
-    else:
-        reward[s] = -1
-    return reward
-
-
-# A 1 pas de temps, la meilleure action à faire est de ne rien faire
-# Ce n'est donc pas suffisant pour choisir la meilleure action à entreprendre
-
-def deuxPasDeTemps(s):
-    gains = {}
-    for action in pb.actions():
-        state_plus_un = pb.etatSuivant(s, action)
-        reward = pb.recompense(s, action, state_plus_un)
-        gt = reward
-        for action in pb.actions():
-            state_plus_un = pb.etatSuivant(s, action)
-            reward2 = pb.recompense(s, action, state_plus_un)
-            gt += reward2
-
-        gains[action] = gt
-    return gains
-
-
-def sansPasDeTemps(n):
-    total_esp_gain = 0
-
-    for i in range(n):
-        for s in pb.etats():
-            recomp = {}
-            for a in pb.actions():
-                # On prend l'état suivant
-                state_plus_un = pb.etatSuivant(s, a)
-                # On calcul la récompense immédiate
-                recomp_immediate = pb.recompense(s, a, state_plus_un)
-                # Calcul de l'espérance de gain pour les états suivants
-                # Tableau composé des récomposens futures
-                future_rewards = []
-                # Action suivante
-                for next_action in pb.actions():
-                    # On calcul la récompense suivante
-                    state_plus_deux = pb.etatSuivant(state_plus_un, next_action)
-                    # On l'ajoute dans les récompenses futures
-                    future_rewards.append(pb.recompense(state_plus_un, next_action, state_plus_deux))
-                # Une fois toutes les récompenses future récupérées, on prend le maximum
-                recomp[a] = recomp_immediate + max(future_rewards)
-            # On prend le maximum des valeurs (nécessaire ???)
-            esp_gain = max(recomp.values())
-            # Espérance de gain totale
-            total_esp_gain += esp_gain
-
-    return total_esp_gain
-
-
-m_gain = sansPasDeTemps(10)
-
-
-def sansPasDeTemps2(n):
-    etat_value_0 = {etat: 0 for etat in pb.etats()}
-    for i in range(n):
-        etat_plus_un = etat_value_0.copy()
-
-        for s in pb.etats():
-
-            gain_max_etat_actuel = float('-inf')
-
-            for a in pb.actions():
-                state_plus_un = pb.etatSuivant(s, a)
-
-                recompense = pb.recompense(s, a, state_plus_un)
-
-                valeur = recompense + etat_plus_un[state_plus_un]
-
-                if valeur > gain_max_etat_actuel:
-
-                    gain_max_etat_actuel = valeur
-            etat_plus_un[s] = gain_max_etat_actuel
-    return etat_value_0[pb.depart()]
-
-
-m_gain = sansPasDeTemps2(10)
-
-print(m_gain)
-
-
-def sansPasDeTemps3(n):
-    # On sauvegarde les valeurs quand on viens de commencer le parcours
-    etat_value_0 = {etat: 0 for etat in pb.etats()}
+# Fonction utilisée pour calculer les Q value
+# Return un tableau avec le GAIN MAXIMAL possible pour chaque etat du monde, à un nombre d'itération max
+def sansPasDeTempsQValues(n):
+    # Initialiser les valeurs d'état avec le dictionnaire fourni
+    etat_value_0 = return_etats_monde()
     # Pour chaque itération
     for i in range(n):
-        # On fait une copy d'etat 0 pour bien s'assurer de reprendre ce que l'on a calculé avant
+        # On copie la première valeur de etat value
         etat_plus_un = etat_value_0.copy()
-        # Pour chaque état
-        for s in pb.etats():
-            #On intialise le gain maximum pour l'état actuel ) -inf, car on peut avoir des gains négatifs (-10 suffirait par exemple, mais il vaut mieux s'assurer)
-            gain_max_etat_actuel = float('-inf')
-            # Pour chaque actions
-            for a in pb.actions():
-                # On calcul l'état suivant
-                state_plus_un = pb.etatSuivant(s, a)
-                # On calcul la récompense immédiate
-                recompense_immmediate = pb.recompense(s, a, state_plus_un)
-                # La valeur actuelle est égale à la récompense immédiate + la récompense maximum pour l'etat Q'(s',a')
-                valeur = recompense_immmediate + etat_plus_un[state_plus_un]
-                # Si la valeur actuelle est plus élevée
-                if valeur > gain_max_etat_actuel:
-                    # On remplace le gain maximum
-                    gain_max_etat_actuel = valeur
-            #La valeur sauvegardée pour l'état actuelle est égale au gain max de cet etat actuel
-            etat_value_0[s] = gain_max_etat_actuel
-    # On retourne la valeur pour laquelle, dans le tableau à l'état 0, on peut avoir le gain maximum
-    return etat_value_0[pb.depart()]
+        #Pour chaque etat de l'agent
+        for etat in pb.etats()[0]:
+            # Pour chaque etat de l'agent
+            for etat_voiture in pb.etats()[1]:
+                # Etat du monde
+                s = (etat, etat_voiture)
+                # Gain maximal à l'état actuel
+                # On met l'état actuel à -inf au cas ou les valeurs peut-être très négatives
+                gain_max_etat_actuel = float('-inf')
+                # Pour chaque actions
+                for a in pb.actions():
+                    # On calcule l'état suivant
+                    state_plus_un = pb.etatSuivant([etat, etat_voiture], a)
+                    # On calcule la récompense immédiate
+                    recompense_immmediate = pb.recompense([etat, etat_voiture], a, state_plus_un)
+                    # On prend la récompense immédiate + la récompense à l'état plus un
+                    valeur = recompense_immmediate + etat_plus_un.get((state_plus_un[0], state_plus_un[1]), 0)
+                    # Si la valeur est supérieur au gain max etat actuel
+                    if valeur > gain_max_etat_actuel:
+                        gain_max_etat_actuel = valeur
+                # On remplace l'état plus un par le gain max etat actuel
+                etat_plus_un[s] = gain_max_etat_actuel
+        # L'état value 0 est ) etat plus un
+        etat_value_0 = etat_plus_un
+    return etat_value_0
+
+# Fonction utilisée pour calculer la politique optimale en fonction des Qvaleurs
+# Return un tableau avec la politique optimale
+def sansPasDeTempsQValuesPolitique(n):
+    # Initialiser les valeurs d'état avec le dictionnaire fourni
+    etat_value_0 = return_etats_monde()
+    #On initialise la politique
+    politique = {}
+    # Pour chaque itération
+    for i in range(n):
+        # On copie la première valeur de etat value
+        etat_plus_un = etat_value_0.copy()
+        # Pour chaque etat de l'agent
+        for etat in pb.etats()[0]:
+            # Pour chaque etat de la voiture
+            for etat_voiture in pb.etats()[1]:
+                # Etat du monde
+                s = (etat, etat_voiture)
+                # Gain maximal à l'état actuel
+                # On met l'état actuel à -inf au cas ou les valeurs peut-être très négatives
+                gain_max_etat_actuel = float('-inf')
+                # On initialise la meilleure action
+                meilleure_action = None
+                # Pour chaque actions
+                for a in pb.actions():
+                    # On calcule l'état suivant
+                    state_plus_un = pb.etatSuivant([etat, etat_voiture], a)
+                    # On calcule la récompense immédiate
+                    recompense_immmediate = pb.recompense([etat, etat_voiture], a, state_plus_un)
+                    # On prend la récompense immédiate + la récompense à l'état plus un
+                    valeur = recompense_immmediate + etat_plus_un.get((state_plus_un[0], state_plus_un[1]), 0)
+                    # Si la valeur est supérieur au gain max etat actuel
+                    if valeur > gain_max_etat_actuel:
+                        gain_max_etat_actuel = valeur
+                        #On applique la meilleure action à cet état la
+                        meilleure_action = a
+                        # On remplace l'état plus un par le gain max etat actuel
+                etat_plus_un[s] = gain_max_etat_actuel
+                # La politique de l'état S est égale à la meilleure action disponible pour cette action
+                politique[s] = meilleure_action
+        #On affecte etat value plus un à etat value 0
+        etat_value_0 = etat_plus_un
+    return politique
+
+# Fonction nous permettant de lancer la meilleure politique
+# Return la recompense à la fin
+def executerPolitiqueOptimale(nbIterations, politique_optimale):
+    stateD = pb.depart()
+    recompense = 0
+    for i in range(nbIterations):
+        etat_courant = (stateD[0], stateD[1])
+        action = politique_optimale.get(etat_courant)
+        if action is None:
+            break
+        stateA = pb.etatSuivant(stateD, action)
+        recompense_actuelle = pb.recompense(stateD, action, stateA)
+        recompense += recompense_actuelle
+
+        # Print l'état précédent, l'état actuel et la récompense
+        print(f"Étape {i + 1}:")
+        print(f"État précédent: {stateD}")
+        print(f"Action: {action}")
+        print(f"État actuel: {stateA}")
+        print(f"Récompense: {recompense}")
+        print("---------")
+
+        if recompense_actuelle == -10:
+            stateA = pb.death(stateA[1])
+        stateD = stateA
+    return recompense
 
 
-gain_max = sansPasDeTemps3(10)
+politique_optimale = sansPasDeTempsQValuesPolitique(10)
 
-print(gain_max)
-
+# Exécuter la politique optimale et calculer le gain maximum
+gain_max = executerPolitiqueOptimale(13, politique_optimale)
